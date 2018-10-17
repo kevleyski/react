@@ -1,10 +1,10 @@
-const React = window.React;
-
 import FixtureSet from '../../FixtureSet';
 import TestCase from '../../TestCase';
 import NumberTestCase from './NumberTestCase';
 import NumberInputDecimal from './NumberInputDecimal';
 import NumberInputExtraZeroes from './NumberInputExtraZeroes';
+
+const React = window.React;
 
 function NumberInputs() {
   return (
@@ -27,9 +27,9 @@ function NumberInputs() {
         <NumberTestCase />
 
         <p className="footnote">
-          <b>Notes:</b> Chrome and Safari clear trailing
-          decimals on blur. React makes this concession so that the
-          value attribute remains in sync with the value property.
+          <b>Notes:</b> Modern Chrome and Safari {'<='} 6 clear trailing
+          decimals on blur. React makes this concession so that the value
+          attribute remains in sync with the value property.
         </p>
       </TestCase>
 
@@ -177,14 +177,13 @@ function NumberInputs() {
         <NumberInputExtraZeroes />
 
         <p className="footnote">
-          <b>Notes:</b> Firefox drops extraneous zeroes when
-          assigned. Zeroes are preserved when editing, however
-          directly assigning a new value will drop zeroes. This
-          {' '}
+          <b>Notes:</b> Firefox drops extraneous zeroes when assigned. Zeroes
+          are preserved when editing, however directly assigning a new value
+          will drop zeroes. This{' '}
           <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1003896">
-            is
-            a bug in Firefox
-          </a> that we can not control for.
+            is a bug in Firefox
+          </a>{' '}
+          that we can not control for.
         </p>
       </TestCase>
     </FixtureSet>

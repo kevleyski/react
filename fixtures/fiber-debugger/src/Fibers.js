@@ -15,15 +15,17 @@ function getFiberColor(fibers, id) {
 }
 
 function Graph(props) {
+  const {rankdir, trackActive} = props.settings;
   var g = new dagre.graphlib.Graph();
   g.setGraph({
     width: 1000,
     height: 1000,
     nodesep: 50,
     edgesep: 150,
-    ranksep: 150,
+    ranksep: 100,
     marginx: 100,
     marginy: 100,
+    rankdir,
   });
 
   var edgeLabels = {};
@@ -63,8 +65,8 @@ function Graph(props) {
     .map(v => g.node(v))
     .find(node => node.label.props.isActive);
   const [winX, winY] = [window.innerWidth / 2, window.innerHeight / 2];
-  var focusDx = activeNode ? winX - activeNode.x : 0;
-  var focusDy = activeNode ? winY - activeNode.y : 0;
+  var focusDx = trackActive && activeNode ? winX - activeNode.x : 0;
+  var focusDy = trackActive && activeNode ? winY - activeNode.y : 0;
 
   var nodes = g.nodes().map(v => {
     var node = g.node(v);
@@ -81,7 +83,8 @@ function Graph(props) {
             y: interpolatingStyle.y + props.dy,
             vanillaX: node.x,
             vanillaY: node.y,
-          })}
+          })
+        }
       </Motion>
     );
   });
@@ -163,8 +166,6 @@ const strokes = {
   sibling: 'darkgreen',
   return: 'red',
   fx: 'purple',
-  progressedChild: 'cyan',
-  progressedDel: 'brown',
 };
 
 function Edge(props) {
@@ -227,7 +228,8 @@ function Edge(props) {
       />
       <text>
         <textPath xlinkHref={`#${lineID}`}>
-          {'     '}{props.children}
+          {'     '}
+          {props.children}
         </textPath>
       </text>
     </svg>
@@ -242,27 +244,24 @@ function formatPriority(priority) {
     case 2:
       return 'task';
     case 3:
-      return 'animation';
-    case 4:
       return 'hi-pri work';
-    case 5:
+    case 4:
       return 'lo-pri work';
-    case 6:
+    case 5:
       return 'offscreen work';
     default:
       throw new Error('Unknown priority.');
   }
 }
 
-export default function Fibers({fibers, show, ...rest}) {
+export default function Fibers({fibers, show, graphSettings, ...rest}) {
   const items = Object.keys(fibers.descriptions).map(
-    id => fibers.descriptions[id],
+    id => fibers.descriptions[id]
   );
 
   const isDragging = rest.className.indexOf('dragging') > -1;
-  const [_, sdx, sdy] = rest.style.transform.match(
-    /translate\((-?\d+)px,(-?\d+)px\)/,
-  ) || [];
+  const [_, sdx, sdy] =
+    rest.style.transform.match(/translate\((-?\d+)px,(-?\d+)px\)/) || [];
   const dx = Number(sdx);
   const dy = Number(sdy);
 
@@ -278,11 +277,16 @@ export default function Fibers({fibers, show, ...rest}) {
         ...rest.style,
         transform: null,
       }}>
-      <Graph className="graph" dx={dx} dy={dy} isDragging={isDragging}>
+      <Graph
+        className="graph"
+        dx={dx}
+        dy={dy}
+        isDragging={isDragging}
+        settings={graphSettings}>
         {items.map(fiber => [
           <Vertex
             key={fiber.id}
-            width={200}
+            width={150}
             height={100}
             isActive={fiber.id === fibers.workInProgressID}>
             <div
@@ -295,142 +299,114 @@ export default function Fibers({fibers, show, ...rest}) {
                 /*prettyFormat(fiber, { plugins: [reactElement ]})*/
                 'todo: this was hanging last time I tried to pretty print'
               }>
-              <small>{fiber.tag} #{fiber.id}</small>
+              <small>
+                {fiber.tag} #{fiber.id}
+              </small>
               <br />
               {fiber.type}
               <br />
-              {fibers.currentIDs.indexOf(fiber.id) === -1
-                ? <small>
-                    {fiber.pendingWorkPriority !== 0 && [
-                      <span
-                        style={{
-                          fontWeight: fiber.pendingWorkPriority <=
-                            fiber.progressedPriority
-                            ? 'bold'
-                            : 'normal',
-                        }}
-                        key="span">
-                        Needs: {formatPriority(fiber.pendingWorkPriority)}
-                      </span>,
-                      <br key="br" />,
-                    ]}
-                    {fiber.progressedPriority !== 0 && [
-                      `Finished: ${formatPriority(fiber.progressedPriority)}`,
-                      <br key="br" />,
-                    ]}
-                    {fiber.memoizedProps !== null &&
+              {fibers.currentIDs.indexOf(fiber.id) === -1 ? (
+                <small>
+                  {fiber.pendingWorkPriority !== 0 && [
+                    <span key="span">
+                      Needs: {formatPriority(fiber.pendingWorkPriority)}
+                    </span>,
+                    <br key="br" />,
+                  ]}
+                  {fiber.memoizedProps !== null &&
                     fiber.pendingProps !== null && [
                       fiber.memoizedProps === fiber.pendingProps
                         ? 'Can reuse memoized.'
                         : 'Cannot reuse memoized.',
-                      <br />,
+                      <br key="br" />,
                     ]}
-                  </small>
-                : <small>
-                    Committed
-                  </small>}
+                </small>
+              ) : (
+                <small>Committed</small>
+              )}
+              {fiber.effectTag && [
+                <br key="br" />,
+                <small key="small">Effect: {fiber.effectTag}</small>,
+              ]}
             </div>
           </Vertex>,
           fiber.child &&
-            show.child &&
-            <Edge
-              source={fiber.id}
-              target={fiber.child}
-              kind="child"
-              weight={1000}
-              key={`${fiber.id}-${fiber.child}-child`}>
-              child
-            </Edge>,
-          fiber.progressedChild &&
-            show.progressedChild &&
-            <Edge
-              source={fiber.id}
-              target={fiber.progressedChild}
-              kind="progressedChild"
-              weight={1000}
-              key={`${fiber.id}-${fiber.progressedChild}-pChild`}>
-              pChild
-            </Edge>,
+            show.child && (
+              <Edge
+                source={fiber.id}
+                target={fiber.child}
+                kind="child"
+                weight={1000}
+                key={`${fiber.id}-${fiber.child}-child`}>
+                child
+              </Edge>
+            ),
           fiber.sibling &&
-            show.sibling &&
-            <Edge
-              source={fiber.id}
-              target={fiber.sibling}
-              kind="sibling"
-              weight={2000}
-              key={`${fiber.id}-${fiber.sibling}-sibling`}>
-              sibling
-            </Edge>,
+            show.sibling && (
+              <Edge
+                source={fiber.id}
+                target={fiber.sibling}
+                kind="sibling"
+                weight={2000}
+                key={`${fiber.id}-${fiber.sibling}-sibling`}>
+                sibling
+              </Edge>
+            ),
           fiber.return &&
-            show.return &&
-            <Edge
-              source={fiber.id}
-              target={fiber.return}
-              kind="return"
-              weight={1000}
-              key={`${fiber.id}-${fiber.return}-return`}>
-              return
-            </Edge>,
+            show.return && (
+              <Edge
+                source={fiber.id}
+                target={fiber.return}
+                kind="return"
+                weight={1000}
+                key={`${fiber.id}-${fiber.return}-return`}>
+                return
+              </Edge>
+            ),
           fiber.nextEffect &&
-            show.fx &&
-            <Edge
-              source={fiber.id}
-              target={fiber.nextEffect}
-              kind="fx"
-              weight={100}
-              key={`${fiber.id}-${fiber.nextEffect}-nextEffect`}>
-              nextFx
-            </Edge>,
+            show.fx && (
+              <Edge
+                source={fiber.id}
+                target={fiber.nextEffect}
+                kind="fx"
+                weight={100}
+                key={`${fiber.id}-${fiber.nextEffect}-nextEffect`}>
+                nextFx
+              </Edge>
+            ),
           fiber.firstEffect &&
-            show.fx &&
-            <Edge
-              source={fiber.id}
-              target={fiber.firstEffect}
-              kind="fx"
-              weight={100}
-              key={`${fiber.id}-${fiber.firstEffect}-firstEffect`}>
-              firstFx
-            </Edge>,
+            show.fx && (
+              <Edge
+                source={fiber.id}
+                target={fiber.firstEffect}
+                kind="fx"
+                weight={100}
+                key={`${fiber.id}-${fiber.firstEffect}-firstEffect`}>
+                firstFx
+              </Edge>
+            ),
           fiber.lastEffect &&
-            show.fx &&
-            <Edge
-              source={fiber.id}
-              target={fiber.lastEffect}
-              kind="fx"
-              weight={100}
-              key={`${fiber.id}-${fiber.lastEffect}-lastEffect`}>
-              lastFx
-            </Edge>,
-          fiber.progressedFirstDeletion &&
-            show.progressedDel &&
-            <Edge
-              source={fiber.id}
-              target={fiber.progressedFirstDeletion}
-              kind="progressedDel"
-              weight={100}
-              key={`${fiber.id}-${fiber.progressedFirstDeletion}-pFD`}>
-              pFDel
-            </Edge>,
-          fiber.progressedLastDeletion &&
-            show.progressedDel &&
-            <Edge
-              source={fiber.id}
-              target={fiber.progressedLastDeletion}
-              kind="progressedDel"
-              weight={100}
-              key={`${fiber.id}-${fiber.progressedLastDeletion}-pLD`}>
-              pLDel
-            </Edge>,
+            show.fx && (
+              <Edge
+                source={fiber.id}
+                target={fiber.lastEffect}
+                kind="fx"
+                weight={100}
+                key={`${fiber.id}-${fiber.lastEffect}-lastEffect`}>
+                lastFx
+              </Edge>
+            ),
           fiber.alternate &&
-            show.alt &&
-            <Edge
-              source={fiber.id}
-              target={fiber.alternate}
-              kind="alt"
-              weight={10}
-              key={`${fiber.id}-${fiber.alternate}-alt`}>
-              alt
-            </Edge>,
+            show.alt && (
+              <Edge
+                source={fiber.id}
+                target={fiber.alternate}
+                kind="alt"
+                weight={10}
+                key={`${fiber.id}-${fiber.alternate}-alt`}>
+                alt
+              </Edge>
+            ),
         ])}
       </Graph>
     </div>

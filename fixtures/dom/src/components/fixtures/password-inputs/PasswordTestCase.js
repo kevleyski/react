@@ -1,6 +1,6 @@
-const React = window.React;
-
 import Fixture from '../../Fixture';
+
+const React = window.React;
 
 class PasswordTestCase extends React.Component {
   state = {value: ''};
@@ -21,7 +21,8 @@ class PasswordTestCase extends React.Component {
               onChange={this.onChange}
             />
             <span className="hint">
-              {' '}Value: {JSON.stringify(this.state.value)}
+              {' '}
+              Value: {JSON.stringify(this.state.value)}
             </span>
           </fieldset>
 

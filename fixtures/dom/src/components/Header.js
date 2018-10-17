@@ -34,12 +34,12 @@ class Header extends React.Component {
         <div className="header__inner">
           <span className="header__logo">
             <img
-              src="https://facebook.github.io/react/img/logo.svg"
-              alt=""
-              width="32"
-              height="32"
+              src={process.env.PUBLIC_URL + '/react-logo.svg'}
+              alt="React"
+              width="20"
+              height="20"
             />
-            React Sandbox (v{React.version})
+            <a href="/">DOM Test Fixtures (v{React.version})</a>
           </span>
 
           <div className="header-controls">
@@ -48,7 +48,8 @@ class Header extends React.Component {
               <select
                 value={window.location.pathname}
                 onChange={this.handleFixtureChange}>
-                <option value="/">Select a Fixture</option>
+                <option value="/">Home</option>
+                <option value="/hydration">Hydration</option>
                 <option value="/range-inputs">Range Inputs</option>
                 <option value="/text-inputs">Text Inputs</option>
                 <option value="/number-inputs">Number Input</option>
@@ -59,7 +60,14 @@ class Header extends React.Component {
                   Input change events
                 </option>
                 <option value="/buttons">Buttons</option>
+                <option value="/date-inputs">Date Inputs</option>
                 <option value="/error-handling">Error Handling</option>
+                <option value="/event-pooling">Event Pooling</option>
+                <option value="/custom-elements">Custom Elements</option>
+                <option value="/media-events">Media Events</option>
+                <option value="/pointer-events">Pointer Events</option>
+                <option value="/mouse-events">Mouse Events</option>
+                <option value="/selection-events">Selection Events</option>
               </select>
             </label>
             <label htmlFor="react_version">
@@ -68,7 +76,9 @@ class Header extends React.Component {
                 value={this.state.version}
                 onChange={this.handleVersionChange}>
                 {this.state.versions.map(version => (
-                  <option key={version} value={version}>{version}</option>
+                  <option key={version} value={version}>
+                    {version}
+                  </option>
                 ))}
               </select>
             </label>
